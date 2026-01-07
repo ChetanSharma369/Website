@@ -8,10 +8,14 @@ class Colors(models.Model):
         return self.color_name
 
 class Person(models.Model):
-    colors = models.ForeignKey(Colors, on_delete=models.CASCADE, related_name='color', null=True)
     name =models.CharField(max_length=100)
     age = models.IntegerField()
 
 class PersonDetail(models.Model):
     city = models.CharField(max_length=100)
     person = models.ForeignKey(Person, on_delete=models.CASCADE, null=True)
+
+class Students(models.Model):
+    name = models.CharField(max_length=100)
+    age = models.IntegerField()
+    city = models.CharField(max_length=100)

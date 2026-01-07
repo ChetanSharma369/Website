@@ -1,10 +1,66 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Person, PersonDetail
-from .serializer import PersonSerializer, login, PersonDetailSerializer
+from .models import Person, PersonDetail, Students
+from .serializer import PersonSerializer, login, PersonDetailSerializer, StudentsSerializer, RegisterSerializer
 from rest_framework.views import APIView
 from rest_framework import viewsets
+#Autentication
+from django.conf import settings
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import User
+
 # Create your views here.
+
+# creating authentication user view
+
+class RegisteringUser(APIView):
+    def post(self,request):
+        data = request.data
+        if data:
+            serialized= RegisterSerializer(data=data)
+            if serialized.is_valid():
+                serialized.save()
+                return Response({'message': 'User registered sucessfully'})
+            else:
+                return Response(serialized.errors)
+        else:
+            return Response({'message': 'No data provided'})
+        
+
+class LoginUser(APIView):
+    def post(self,request):
+        data = request.data
+        if data:
+            serialized = login(data=data)
+            if serialized.is_valid():
+                user = authenticate(username=serialized.validated_data['username'], password=serialized.validated_data['password'])
+                token = Token.objects.get_create(user=user)
+                if user:
+                    return Response({"message": "Login successful"})
+                return Response({"message": "Invalid credentials"})
+            return Response(serialized.errors)
+        return Response({'message': 'No data provided'})
+
+
+
+class StudentsViewSet(viewsets.ModelViewSet):
+    serializer_class = StudentsSerializer
+    queryset = Students.objects.all()
+
+class PeopleViewSet(viewsets.ModelViewSet):
+    serializer_class = PersonSerializer
+    queryset = Person.objects.all()
+
+    def list(self, request):
+        search = request.GET.get('search')
+        if search:
+            self.queryset = self.queryset.filter(name__startswith=search)
+
+        serializer = self.get_serializer(self.queryset, many=True)
+        return Response({'status':200, 'data': serializer.data })
+
+
 @api_view(['GET','POST','PUT','PATCH','DELETE'])
 def index(request):
     cources = {
@@ -84,6 +140,3 @@ class  Persondetail(APIView):
     def put(self, request):
         return Response({"message":"this is put"})
     
-class PersonDetailViewSet(viewsets.ModelViewSet):
-    serializer_class = PersonSerializer
-    queryset = Person.objects.all()
